@@ -1,7 +1,7 @@
 -- ============================================================
 -- FREELANCER EARNINGS VS SKILL STACK ANALYSIS
 -- ============================================================
--- Download Dataset Heere: https://drive.google.com/file/d/14NUgbdxgR6UG4PkgcTOES_F1v0VJ831x/view?usp=sharing
+-- Download Dataset Here: https://drive.google.com/file/d/14NUgbdxgR6UG4PkgcTOES_F1v0VJ831x/view?usp=sharing
 -- ============================================================
 -- Objective:
 -- Analyze how skills, experience, education, region, and
@@ -238,4 +238,5 @@ Interpretation:
 - Overall, platform choice plays a meaningful role in freelancer earning
   potential.
 */
+
 
