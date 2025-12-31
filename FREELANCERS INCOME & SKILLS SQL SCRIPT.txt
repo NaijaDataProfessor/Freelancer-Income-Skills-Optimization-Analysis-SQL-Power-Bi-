@@ -1,0 +1,241 @@
+-- ============================================================
+-- FREELANCER EARNINGS VS SKILL STACK ANALYSIS
+-- ============================================================
+-- Download Dataset Heere: https://drive.google.com/file/d/14NUgbdxgR6UG4PkgcTOES_F1v0VJ831x/view?usp=sharing
+-- ============================================================
+-- Objective:
+-- Analyze how skills, experience, education, region, and
+-- freelancing platforms influence annual income.
+-- ============================================================
+
+-- Create a dedicated database for the analysis
+CREATE DATABASE freelancer_analysis;
+
+-- Activate the database
+USE freelancer_analysis;
+
+-- Drop the raw table if it already exists to avoid conflicts
+DROP TABLE freelance_data;
+
+-- Create the raw data table to store the imported CSV data
+CREATE TABLE freelance_data
+(
+    freelancerid        VARCHAR(200),
+    category            VARCHAR(200),
+    primaryskills       VARCHAR(200),
+    yearsofexperience   VARCHAR(200),
+    experiencelevel     VARCHAR(200),
+    region              VARCHAR(200),
+    country             VARCHAR(200),
+    education           VARCHAR(200),
+    hourlyrate          VARCHAR(200),
+    annualincome        VARCHAR(200),
+    primaryplatform     VARCHAR(200)
+);
+
+-- Load the CSV file into the raw data table
+-- Data is comma-separated and values may be enclosed in quotes
+LOAD DATA INFILE "C:/ProgramData/MySQL/MySQL Server 9.3/Uploads/freelancer_earnings - freelancer_earnings_vs_skillstack_dataset.csv"
+INTO TABLE freelance_data
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
+
+-- Preview the raw imported data
+SELECT *
+FROM freelance_data;
+
+-- ============================================================
+-- DATA CLEANING & TRANSFORMATION
+-- ============================================================
+
+-- Remove the cleaned dataset table if it already exists
+DROP TABLE dataset;
+
+-- Create a cleaned dataset with duplicate records removed
+CREATE TABLE dataset AS
+(
+    SELECT DISTINCT *
+    FROM freelance_data
+);
+
+-- Preview the cleaned dataset
+SELECT *
+FROM dataset;
+
+-- Inspect column structure and data types
+SHOW COLUMNS
+FROM dataset;
+
+-- Convert years of experience to integer for numerical analysis
+ALTER TABLE dataset
+MODIFY COLUMN yearsofexperience INT;
+
+-- Convert hourly rate to a numeric data type
+ALTER TABLE dataset
+MODIFY COLUMN hourlyrate FLOAT;
+
+-- Remove commas and currency symbols from annual income
+UPDATE dataset
+SET annualincome = REPLACE(REPLACE(annualincome, ',', ''), '$','');
+
+-- Convert annual income to numeric format
+ALTER TABLE dataset
+MODIFY COLUMN annualincome FLOAT;
+
+-- ============================================================
+-- EXPLORATORY DATA ANALYSIS (EDA)
+-- ============================================================
+
+-- Identify all unique freelancer categories
+SELECT DISTINCT category
+FROM dataset
+ORDER BY 1;
+
+-- Check unique freelancing platforms and inspect hidden characters
+SELECT DISTINCT primaryplatform, HEX(primaryplatform)
+FROM dataset
+ORDER BY 1;
+
+-- Remove carriage return characters from platform names
+UPDATE dataset
+SET primaryplatform = REPLACE(primaryplatform, '\r', '');
+
+-- Trim extra spaces from platform names for consistency
+UPDATE dataset
+SET primaryplatform = TRIM(primaryplatform);
+
+-- ============================================================
+-- INCOME ANALYSIS
+-- ============================================================
+
+-- Analyze average annual income and experience distribution per category
+SELECT
+    category,
+    ROUND(AVG(annualincome), 2) AS average_income,
+    MIN(yearsofexperience)      AS minimum_years,
+    ROUND(AVG(yearsofexperience), 2) AS average_years,
+    MAX(yearsofexperience)      AS maximum_years
+FROM dataset
+GROUP BY category
+ORDER BY average_income DESC, average_years DESC;
+
+/*
+Interpretation:
+- AI/ML Engineering records the highest average annual income, indicating
+  strong market demand and premium pricing for advanced technical skills.
+- Blockchain and Cybersecurity also rank among the top-paying categories,
+  reflecting the value placed on specialized and security-focused expertise.
+- Categories such as Web Development, UI/UX Design, and Backend Development
+  have relatively lower average incomes despite similar experience ranges,
+  suggesting higher competition or market saturation.
+- Across all categories, minimum experience starts at 1 year, while average
+  experience clusters around 5–6 years, indicating that income differences
+  are driven more by skill specialization than years of experience alone.
+- Overall, highly specialized and emerging tech roles command significantly
+  higher earnings compared to general development roles.
+*/
+
+
+-- Compare average income across different experience levels
+SELECT
+    experiencelevel AS experience_level,
+    ROUND(AVG(annualincome), 2) AS average_income
+FROM dataset
+GROUP BY experience_level
+ORDER BY average_income DESC;
+
+/*
+Interpretation:
+- Senior-level freelancers earn the highest average annual income,
+  more than double that of junior-level freelancers.
+- There is a clear income progression from junior to mid to senior levels,
+  indicating that experience level strongly influences earning potential.
+- The large income gap between junior and senior levels suggests that
+  skill depth, project complexity, and client trust increase significantly
+  with experience.
+- Overall, experience level is one of the most important drivers of
+  freelancer income in this dataset.
+*/
+
+
+-- Evaluate average income across regions and countries
+SELECT
+    country,
+    region,
+    ROUND(AVG(annualincome), 2) AS average_income
+FROM dataset
+GROUP BY country, region
+ORDER BY average_income DESC;
+
+/*
+Interpretation:
+- Freelancers based in Switzerland, Australia, and the United States record
+  the highest average annual incomes, indicating strong purchasing power
+  and access to high-value clients in these markets.
+- Western Europe and North America consistently show higher average incomes
+  compared to other regions, reflecting stronger economies and higher
+  freelance pricing standards.
+- Middle Eastern countries such as Israel and the UAE also perform well,
+  suggesting growing demand for skilled freelancers in these regions.
+- Eastern Europe and Latin America fall within a mid-income range, offering
+  competitive earnings but at lower averages than Western markets.
+- African and parts of Asia Pacific countries record the lowest average
+  incomes, highlighting regional wage disparities despite the global
+  nature of freelancing.
+- Overall, geographic location remains a significant factor influencing
+  freelancer income, even in remote work environments.
+*/
+
+
+-- Analyze income differences based on educational background
+SELECT
+    education,
+    ROUND(AVG(annualincome), 2) AS average_income
+FROM dataset
+GROUP BY education
+ORDER BY average_income DESC;
+
+/*
+Interpretation:
+- Freelancers with a PhD have the highest average annual income,
+  indicating that advanced academic qualifications can provide
+  a strong earnings advantage in specialized roles.
+- Bootcamp-trained and self-taught freelancers earn comparably high incomes,
+  outperforming those with formal Master’s and Bachelor’s degrees.
+- The relatively small income gap between Bachelor’s and Master’s degree holders
+  suggests that additional academic qualifications alone do not guarantee
+  significantly higher earnings.
+- Overall, practical skills and experience appear to be nearly as valuable
+  as formal education in determining freelancer income.
+*/
+
+
+-- Compare freelancer income across different platforms
+SELECT
+    primaryplatform,
+    ROUND(AVG(annualincome), 2) AS average_income
+FROM dataset
+GROUP BY primaryplatform
+ORDER BY average_income DESC;
+
+
+/*
+Interpretation:
+- Freelancers operating on “Other” platforms record the highest average income,
+  suggesting that niche platforms or private marketplaces may offer access
+  to higher-paying clients.
+- Fiverr, Upwork, and Freelancer show relatively similar average incomes,
+  indicating competitive but standardized pricing structures across major
+  freelance platforms.
+- Direct client engagements outperform some established platforms,
+  highlighting the income advantage of bypassing platform fees.
+- LinkedIn-based freelancing records lower average income, which may reflect
+  its use more as a networking tool than a primary freelancing marketplace.
+- Toptal shows a lower average income in this dataset, suggesting that income
+  outcomes can vary based on project volume, freelancer mix, or sample size.
+- Overall, platform choice plays a meaningful role in freelancer earning
+  potential.
+*/
+
